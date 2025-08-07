@@ -1,0 +1,1494 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Glog.AI",
+          "organization": "Glog.AI",
+          "fullName": "Glog, Making software more secure",
+          "version": "1.0.0",
+          "semanticVersion": "1.0.0",
+          "informationUri": "https://www.glog.ai",
+          "rules": [
+            {
+              "id": "glog-a63ed140-1f2b-4e96-9d02-2b8712770b40",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `memcpy` function in C++ is used to copy a block of memory from one location to another. This function does not check for the size of the destination buffer, which can lead to buffer overflow if the source buffer is larger than the destination buffer. This is a common vulnerability in C++ programming and can lead to serious security issues such as code execution, denial of service, or information disclosure.\n\nIn the provided code snippet:\n\n```cpp\nmemcpy(mh->rkey_buf.buf, rkey_buf, mh->rkey_buf.rkey_buf_size)\n```\n\nThe `memcpy` function is copying the content of `rkey_buf` into `mh->rkey_buf.buf` with a size of `mh->rkey_buf.rkey_buf_size`. If the size of `rkey_buf` is larger than `mh->rkey_buf.buf`, it will cause a buffer overflow.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, you should always ensure that the destination buffer is large enough to hold the data being copied from the source buffer. This can be done by checking the size of the source buffer and comparing it with the size of the destination buffer before performing the copy operation.\n\n## Source Code Fix Recommendation\n\nA safer alternative to `memcpy` is `strncpy` which includes the size of the destination buffer as a parameter. This function will not copy more than the specified size, preventing buffer overflow. Here is how you can modify the code:\n\n```cpp\nif (sizeof(mh->rkey_buf.buf) >= mh->rkey_buf.rkey_buf_size) {\n    strncpy(mh->rkey_buf.buf, rkey_buf, mh->rkey_buf.rkey_buf_size);\n} else {\n    // Handle error: destination buffer is not large enough\n}\n```\n\n## Library Dependencies\n\nThe `memcpy` function is part of the C standard library (`<cstring>` in C++), so no additional libraries are needed for the code to execute properly.\n\n## References\n\n- [OWASP Buffer Overflow](https://owasp.org/www-community/vulnerabilities/Buffer_Overflow)\n- [CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')](https://cwe.mitre.org/data/definitions/120.html)"
+              },
+              "properties": {
+                "tags": [
+                  "DS121708"
+                ]
+              }
+            },
+            {
+              "id": "glog-0528a7b5-f9a9-4b00-a16a-9e557bce7ee5",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strlen()` function in C and C++ is used to find the length of a string. However, it can lead to vulnerabilities if not used properly. The function counts the number of characters in a string until it reaches a null character (`'\\0'`). If the string is not null-terminated, `strlen()` will keep reading memory beyond the intended boundary, leading to a buffer overflow. This can cause crashes, data corruption, and potentially allow an attacker to execute arbitrary code.\n\nIn the provided code snippet, `strlen(nccl_ucx_rma_zcopy_thresh)` is a potential vulnerability if `nccl_ucx_rma_zcopy_thresh` is not a null-terminated string.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, always ensure that your strings are null-terminated. If you are dealing with user input or other untrusted data, make sure to validate and sanitize it before passing it to `strlen()`. \n\n## Source Code Fix Recommendation\n\nWithout the full context of the code, it's hard to provide a specific fix. However, a general recommendation would be to use a safer alternative to `strlen()`, such as `strnlen()`, which takes a maximum length parameter to prevent buffer overflows:\n\n```cpp\nsize_t len = strnlen(nccl_ucx_rma_zcopy_thresh, MAX_LENGTH);\n```\n\nReplace `MAX_LENGTH` with the maximum expected length of `nccl_ucx_rma_zcopy_thresh`.\n\n## Library Dependencies\n\nThe `strlen()` function is part of the C standard library (`<cstring>` in C++, `<string.h>` in C), so no additional libraries are needed for this function. However, the `nccl_ucx_rma_zcopy_thresh` variable seems to be part of the NCCL and UCX libraries, so these would be required dependencies.\n\n## References\n\n- [OWASP Buffer Overflow Attack](https://owasp.org/www-community/attacks/Buffer_overflow_attack)\n- [CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')](https://cwe.mitre.org/data/definitions/120.html)\n\nPlease note that the links provided are accessible to anonymous users at the time of writing this report."
+              },
+              "properties": {
+                "tags": [
+                  "DS140021"
+                ]
+              }
+            },
+            {
+              "id": "glog-d7649a2c-54e2-42f4-8dea-732aa7270f85",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `malloc()` function in C is used to dynamically allocate a block of memory. The size of the block is specified in bytes. If the function fails to allocate the requested block of memory, a null pointer is returned. \n\nThe vulnerability in this case could be due to several reasons:\n\n1. The `rkey_buf_size` variable could be manipulated to request a large amount of memory, leading to a Denial of Service (DoS) attack.\n2. If the return value of `malloc()` is not checked, it could lead to a null pointer dereference, causing the program to crash.\n3. If the allocated memory is not freed after use, it could lead to a memory leak.\n\n## Mitigation Advice\n\n1. Always check the return value of `malloc()`. If it returns a null pointer, the program should handle this error gracefully.\n2. Free the allocated memory after use to prevent memory leaks.\n3. Validate and sanitize the input used to determine the size of the memory to be allocated.\n\n## Source Code Fix Recommendation\n\n```c++\n#include <stdlib.h>\n\n// Assuming rkey_buf_size is an integer\nint rkey_buf_size = 10;\n\n// Allocate memory\nchar* buffer = (char*) malloc(rkey_buf_size);\n\n// Check if memory allocation was successful\nif (buffer == NULL) {\n    // Handle error\n    exit(1);\n}\n\n// Use the allocated memory\n\n// Free the allocated memory\nfree(buffer);\nbuffer = NULL;\n```\n\n## Library Dependencies\n\nThe `stdlib.h` library is required for the `malloc()` and `free()` functions.\n\n## References\n\n- [OWASP C/C++ Vulnerabilities](https://owasp.org/www-pdf-archive/OWASP_SCP_Quick_Reference_Guide_v2.pdf)\n\n## Common Weakness Enumeration (CWE)\n\n- [CWE-131: Incorrect Calculation of Buffer Size](https://cwe.mitre.org/data/definitions/131.html)\n- [CWE-690: Unchecked Return Value to NULL Pointer Dereference](https://cwe.mitre.org/data/definitions/690.html)\n- [CWE-401: Missing Release of Memory after Effective Lifetime](https://cwe.mitre.org/data/definitions/401.html)"
+              },
+              "properties": {
+                "tags": [
+                  "DS161085"
+                ]
+              }
+            },
+            {
+              "id": "glog-ad6602c7-8043-4759-b488-c45b29821a1e",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `malloc` function in C++ is used to dynamically allocate memory at runtime. However, it can be a source of vulnerabilities if not used correctly. If the size argument passed to `malloc` is not properly validated or calculated, it can lead to buffer overflows, integer overflows, or other memory corruption issues. This can potentially allow an attacker to execute arbitrary code or cause a Denial of Service (DoS) condition.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, you should:\n\n1. Always validate and sanitize the size argument passed to `malloc`.\n2. Use functions that limit the amount of data written to the allocated memory, such as `strncpy` instead of `strcpy`.\n3. Consider using memory management functions that automatically handle memory allocation and deallocation, such as `std::vector` or `std::array` in C++.\n4. Regularly use static code analysis tools to detect potential vulnerabilities in your code.\n\n## Source Code Fix Recommendation\n\nWithout the full context of the code, it's hard to provide a specific fix. However, a general fix would be to ensure that the size argument passed to `malloc` is properly validated and sanitized. For example:\n\n```cpp\nstruct ep_list* list = NULL;\nsize_t size = sizeof(struct ep_list);\n\nif (size > 0) {\n    list = (struct ep_list*) malloc(size);\n    if (list == NULL) {\n        // Handle malloc failure\n    }\n} else {\n    // Handle size validation failure\n}\n```\n\n## Library Dependencies\n\nThe code example provided does not appear to have any specific library dependencies beyond the standard C++ libraries.\n\n## OWASP and CWE Links\n\n- [CWE-131: Incorrect Calculation of Buffer Size](https://cwe.mitre.org/data/definitions/131.html)\n\nPlease note that these links are subject to change and may not always be accessible. Always ensure to check the validity of these links before using them."
+              },
+              "properties": {
+                "tags": [
+                  "DS161085"
+                ]
+              }
+            },
+            {
+              "id": "glog-13e0b2c8-38ff-4c87-9edc-ffc83febcc70",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strlen()` function in C++ is used to find the length of a string. However, it can lead to vulnerabilities if not used properly. The function counts the number of characters in a string until it reaches a null character (`'\\0'`). If the string is not null-terminated, `strlen()` will continue reading memory until it encounters a null character, potentially leading to buffer overflows, memory corruption, and other undefined behaviors. This is a common vulnerability in C and C++ programming.\n\nIn the provided code snippet, `strlen(nccl_ucx_rma_tls)` is a potential vulnerability sink if `nccl_ucx_rma_tls` is not a null-terminated string.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, always ensure that your strings are null-terminated. Avoid using `strlen()` on strings that may not be null-terminated. Instead, consider using safer alternatives such as `strnlen()`, which takes an additional parameter specifying the maximum length of the string to be considered.\n\n## Source Code Fix Recommendation\n\nAssuming `nccl_ucx_rma_tls` is a character array, you can use `strnlen()` as follows:\n\n```cpp\n#include <string.h>\n\nsize_t len = strnlen(nccl_ucx_rma_tls, sizeof(nccl_ucx_rma_tls));\n```\n\nIn this code, `strnlen()` will only consider the first `sizeof(nccl_ucx_rma_tls)` characters of `nccl_ucx_rma_tls`. If `nccl_ucx_rma_tls` is not null-terminated within this range, `strnlen()` will return `sizeof(nccl_ucx_rma_tls)`.\n\n## Library Dependencies\n\nThe code example requires the following library:\n\n- `<string.h>`: This library provides various string handling functions, including `strlen()` and `strnlen()`.\n\n## References\n\n- [OWASP C++ Secure Coding Practices](https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html)\n- [CWE-126: Buffer Over-read](https://cwe.mitre.org/data/definitions/126.html)\n\nPlease note that the links provided are accessible to anonymous users at the time of writing this report."
+              },
+              "properties": {
+                "tags": [
+                  "DS140021"
+                ]
+              }
+            },
+            {
+              "id": "glog-57a8febd-b058-44fe-bf02-cc7f7201ca1c",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `memcpy` function in C++ is used to copy a block of memory from one location to another. This function is vulnerable to buffer overflow attacks if the size of the data being copied is larger than the size of the destination buffer. In the provided code snippet, the vulnerability could occur if the size of `nccl_ucx_if_addr` is larger than the size of `addr`.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, you should always ensure that the destination buffer is large enough to hold the data being copied. This can be done by checking the size of the destination buffer and the size of the source data before calling `memcpy`.\n\nAdditionally, consider using safer alternatives to `memcpy` such as `strncpy` or `memcpy_s` (in C11), which include the size of the destination buffer as a parameter and can prevent buffer overflow.\n\n## Source Code Fix Recommendation\n\nHere is a recommended fix for the provided code snippet:\n\n```cpp\nif (sizeof(*addr) >= sizeof(nccl_ucx_if_addr)) {\n    memcpy(addr, &nccl_ucx_if_addr, sizeof(*addr));\n} else {\n    // Handle error: destination buffer is too small\n}\n```\n\n## Library Dependencies\n\nThe `memcpy` function is part of the C standard library, so no additional libraries are needed for the provided code snippet.\n\n## OWASP Resources\n\n- [Buffer Overflow](https://owasp.org/www-community/vulnerabilities/Buffer_Overflow)\n\n## Common Weakness Enumeration (CWE)\n\n- [CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')](https://cwe.mitre.org/data/definitions/120.html)\n- [CWE-119: Improper Restriction of Operations within the Bounds of a Memory Buffer](https://cwe.mitre.org/data/definitions/119.html)"
+              },
+              "properties": {
+                "tags": [
+                  "DS121708"
+                ]
+              }
+            },
+            {
+              "id": "glog-c6224833-fe87-471f-8c2a-2bb5924d6ed9",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strlen()` function in C and C++ is used to find the length of a string. However, it can lead to vulnerabilities if not used properly. The function counts the number of characters in a string until it reaches a null character (`'\\0'`). If the string is not null-terminated, `strlen()` will keep reading memory beyond the intended boundary, leading to a buffer overflow vulnerability. This can result in crashes, incorrect behavior, or even code execution.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, always ensure that your strings are null-terminated. Avoid using `strlen()` on strings that may not be null-terminated. Instead, consider using safer alternatives such as `strnlen()`, which takes an additional parameter to specify the maximum length of the string.\n\n## Source Code Fix Recommendation\n\nReplace `strlen(commId)` with `strnlen(commId, MAX_LENGTH)`, where `MAX_LENGTH` is the maximum expected length of `commId`.\n\n```cpp\n#include <string.h>\n\n#define MAX_LENGTH 100\n\n// ...\n\nsize_t len = strnlen(commId, MAX_LENGTH);\n```\n\n## Library Dependencies\n\nThe `strlen()` and `strnlen()` functions are part of the C standard library, so you need to include the `<string.h>` header.\n\n## References\n\n- [OWASP C/C++ Vulnerabilities](https://owasp.org/www-pdf-archive/OWASP_SCP_Quick_Reference_Guide_v2.pdf)\n- [CWE-126: Buffer Over-read](https://cwe.mitre.org/data/definitions/126.html)\n\nPlease note that the links provided are accessible to anonymous users at the time of writing this report."
+              },
+              "properties": {
+                "tags": [
+                  "DS140021"
+                ]
+              }
+            },
+            {
+              "id": "glog-95293873-7e2a-45da-bdd2-8be229fed7ea",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strncpy` function in C++ is a common source of vulnerabilities due to its potential to cause buffer overflows. This function copies a specified number of characters from one string to another. If the source string is longer than the specified number of characters, `strncpy` does not append a null character to the destination string. This can lead to buffer overflow vulnerabilities if the destination string is used as a null-terminated string.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, consider using safer string handling functions that ensure null-termination and prevent buffer overflows. For example, `strlcpy` or `snprintf` can be used instead of `strncpy`. \n\n## Source Code Fix Recommendation\n\nReplace the `strncpy` function with `snprintf`:\n\n```cpp\nsnprintf(port_str, sizeof(port_str), \"%s\", ip_port_pair+i+2);\n```\n\n## Library Dependencies\n\nThe code example requires the following library:\n\n```cpp\n#include <cstdio>\n```\n\n## References\n\n- [OWASP C++ Secure Coding Practices](https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html)\n- [CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')](https://cwe.mitre.org/data/definitions/120.html)\n\nPlease note that the links provided are accessible to anonymous users at the time of writing this report."
+              },
+              "properties": {
+                "tags": [
+                  "DS111237"
+                ]
+              }
+            },
+            {
+              "id": "glog-0d7cfefa-edfd-4a6b-9237-0be74fde2e17",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strncpy` function in C++ is considered unsafe because it does not guarantee that the destination string will be null-terminated, which can lead to buffer overflow vulnerabilities. If the source string length is greater than or equal to the size of the destination buffer, `strncpy` will not append a null character at the end of the destination string. This can lead to undefined behavior when the destination string is used in a context that expects a null-terminated string.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, consider using safer string handling functions that ensure null-termination of the destination string, such as `strlcpy` or `snprintf`. If these functions are not available, you can manually null-terminate the destination string after using `strncpy`.\n\n## Source Code Fix Recommendation\n\nHere is a possible fix for the provided code:\n\n```cpp\nstrncpy(ip_str, ip_port_pair+1, global_scope ? i-1 : j-1);\nip_str[global_scope ? i-1 : j-1] = '\\0';\n```\n\nThis code ensures that `ip_str` is null-terminated after copying the string.\n\n## Library Dependencies\n\nThe code example requires the following library:\n\n```cpp\n#include <cstring>\n```\n\n## References\n\n- [OWASP C++ Secure Coding Practices](https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html)\n- [CWE-119: Improper Restriction of Operations within the Bounds of a Memory Buffer](https://cwe.mitre.org/data/definitions/119.html)\n\nPlease note that the links provided are accessible to anonymous users at the time of writing this report."
+              },
+              "properties": {
+                "tags": [
+                  "DS111237"
+                ]
+              }
+            },
+            {
+              "id": "glog-58f30bd6-2192-486f-9dbb-0f70fd291b70",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strlen()` function in C and C++ is used to find the length of a string. However, it can lead to vulnerabilities if not used properly. The function counts the number of characters in a string until it reaches a null character (`'\\0'`). If the string is not null-terminated, `strlen()` will continue reading memory beyond the intended boundary, leading to a buffer overflow. This can cause crashes, incorrect behavior, or even allow an attacker to execute arbitrary code.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, always ensure that your strings are null-terminated. Avoid using `strlen()` on strings that may not be null-terminated. Instead, consider using safer alternatives such as `strnlen()`, which takes a maximum length parameter and will not read beyond this limit.\n\n## Source Code Fix Recommendation\n\nInstead of:\n\n```cpp\nstrlen(ip_port_pair);\n```\n\nUse:\n\n```cpp\nstrnlen(ip_port_pair, MAX_LENGTH);\n```\n\nWhere `MAX_LENGTH` is the maximum expected length of `ip_port_pair`.\n\n## Library Dependencies\n\nThe `strlen()` function is part of the C standard library, so no additional libraries are needed.\n\n## References\n\n- [OWASP C/C++ Vulnerabilities](https://owasp.org/www-pdf-archive/OWASP_SCP_Quick_Reference_Guide_v2.pdf)\n- [CWE-126: Buffer Over-read](https://cwe.mitre.org/data/definitions/126.html)\n\nPlease note that the links provided are accessible to anonymous users at the time of writing this report."
+              },
+              "properties": {
+                "tags": [
+                  "DS140021"
+                ]
+              }
+            },
+            {
+              "id": "glog-19d9ee50-8686-43a0-bf2e-dbaeb9a7e179",
+              "help": {
+                "text": "",
+                "markdown": "### Description\n\nThe vulnerability associated with the `strlen` function in C++ arises when the function is used on a string that is not null-terminated. This can lead to undefined behavior, including reading beyond the buffer's allocated memory, which can cause a program crash or expose sensitive data. This issue is often categorized under buffer over-read vulnerabilities.\n\n### General Mitigation Advice\n\n1. **Ensure Null-Termination**: Always ensure that strings are properly null-terminated before passing them to `strlen`.\n2. **Use Safer Alternatives**: Consider using safer string handling functions or libraries that automatically manage string lengths and null-termination, such as `std::string` in C++.\n3. **Input Validation**: Validate and sanitize all inputs to ensure they conform to expected formats and lengths.\n4. **Static Analysis Tools**: Use static analysis tools to detect potential buffer over-read vulnerabilities in your code.\n\n### Source Code Fix Recommendation\n\nIf you have a code snippet like this:\n\n```cpp\n#include <cstring>\n\nvoid processEnvironmentVariable(const char* env) {\n    size_t length = strlen(env);\n    // Further processing...\n}\n```\n\nYou can mitigate the vulnerability by ensuring the input is null-terminated and using `std::string`:\n\n```cpp\n#include <string>\n#include <iostream>\n\nvoid processEnvironmentVariable(const char* env) {\n    if (env == nullptr) {\n        std::cerr << \"Environment variable is null.\" << std::endl;\n        return;\n    }\n    \n    std::string envStr(env);\n    size_t length = envStr.length();\n    // Further processing...\n}\n```\n\n### Library Dependencies\n\nTo execute the code example properly, the following standard libraries are required:\n\n- `<cstring>`: For the original `strlen` function.\n- `<string>`: For using `std::string`.\n- `<iostream>`: For input/output operations.\n\n### Relevant Resources\n\n- [OWASP Top Ten](https://owasp.org/www-project-top-ten/)\n- [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/)\n\n### Common Weakness Enumeration\n\n- [CWE-126: Buffer Over-read](https://cwe.mitre.org/data/definitions/126.html)"
+              },
+              "properties": {
+                "tags": [
+                  "DS140021"
+                ]
+              }
+            },
+            {
+              "id": "glog-4c85e6a3-2ea5-43ce-bcca-f7be3d39c491",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strlen()` function in C and C++ is used to find the length of a string. However, it can lead to vulnerabilities if not used properly. The function counts the number of characters in a string until it reaches a null character (`'\\0'`). If the string is not null-terminated, `strlen()` will continue reading memory beyond the intended boundary, leading to a buffer overflow. This can cause crashes, incorrect behavior, or even allow an attacker to execute arbitrary code.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, always ensure that your strings are null-terminated. Avoid using `strlen()` on strings that may not be null-terminated. Instead, consider using safer alternatives such as `strnlen()`, which takes a maximum length parameter and will not read beyond this limit.\n\n## Source Code Fix Recommendation\n\nInstead of:\n\n```cpp\nstrlen(ip_port_pair);\n```\n\nUse:\n\n```cpp\nstrnlen(ip_port_pair, MAX_LENGTH);\n```\n\nWhere `MAX_LENGTH` is the maximum expected length of `ip_port_pair`.\n\n## Library Dependencies\n\nThe `strlen()` function is part of the C standard library, so no additional libraries are needed.\n\n## References\n\n- [OWASP C/C++ Vulnerabilities](https://owasp.org/www-pdf-archive/OWASP_SCP_Quick_Reference_Guide_v2.pdf)\n- [CWE-126: Buffer Over-read](https://cwe.mitre.org/data/definitions/126.html)\n\nPlease note that the links provided are accessible to anonymous users at the time of writing this report."
+              },
+              "properties": {
+                "tags": [
+                  "DS140021"
+                ]
+              }
+            },
+            {
+              "id": "glog-ab574062-5b1f-40c1-be5d-c49f988854a9",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strncpy` function in C++ is a common source of vulnerabilities due to its potential to cause buffer overflow. This can occur when the source string's length is greater than the destination buffer size. The function does not null-terminate the destination string when the source string length is greater than or equal to the destination buffer size, which can lead to undefined behavior or other security issues.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, consider using safer string handling functions that ensure null-termination and prevent buffer overflow. Functions such as `strlcpy` or `strncpy_s` (in C11) are safer alternatives. Always ensure that the destination buffer is large enough to hold the source string including the null-terminator.\n\n## Source Code Fix Recommendation\n\nReplace the `strncpy` function with a safer alternative. Here's an example using `strlcpy`:\n\n```cpp\n#include <string.h> // for strlcpy\n\n// ...\n\nstrlcpy(ifNames+found*ifNameMaxSize, interface->ifa_name, ifNameMaxSize);\n```\n\n## Library Dependencies\n\nThe code example requires the following library:\n\n- `<string.h>` for `strlcpy` function.\n\n## References\n\n- [OWASP C++ Secure Coding Practices](https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html)\n- [CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')](https://cwe.mitre.org/data/definitions/120.html)\n\nPlease note that the availability and functionality of the `strlcpy` function may depend on the platform and the C library in use. Always refer to the appropriate documentation for your system."
+              },
+              "properties": {
+                "tags": [
+                  "DS111237"
+                ]
+              }
+            },
+            {
+              "id": "glog-9e065107-fe28-4173-8c81-65540fb23868",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `memcpy` function in C++ is used to copy a block of memory from one location to another. This function does not check for any buffer overflow condition, which can lead to a vulnerability if the size of the data being copied is greater than the size of the destination buffer. This can lead to overwriting of adjacent memory and can potentially lead to execution of arbitrary code, denial of service, or information disclosure.\n\nIn the provided code snippet, `memcpy(localAddrs+found, interface->ifa_addr, salen)`, the vulnerability can occur if `salen` is greater than the size of `localAddrs+found`.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, you should always ensure that the destination buffer is large enough to hold the data being copied. This can be done by checking the size of the data and the size of the buffer before the `memcpy` operation.\n\n## Source Code Fix Recommendation\n\nA safer alternative to `memcpy` is `memmove`, which also copies data from one location to another, but it checks for buffer overflow. However, the best solution is to always ensure that the buffer is large enough. Here is a fixed version of the code:\n\n```cpp\nif(salen <= sizeof(localAddrs) - found) {\n    memcpy(localAddrs+found, interface->ifa_addr, salen);\n} else {\n    // Handle error\n}\n```\n\n## Library Dependencies\n\nThe code example requires the following libraries:\n\n- `#include <string.h>` for `memcpy`\n- `#include <sys/types.h>` for `salen`\n- `#include <ifaddrs.h>` for `ifa_addr`\n\n## OWASP and CWE Links\n\n- [OWASP C++ Secure Coding Practices](https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html)\n- [CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')](https://cwe.mitre.org/data/definitions/120.html)\n\nPlease note that these links are subject to change and may not be available at a future date."
+              },
+              "properties": {
+                "tags": [
+                  "DS121708"
+                ]
+              }
+            },
+            {
+              "id": "glog-7af09692-3aff-489c-bb42-72ef8cfbd165",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `memcpy` function in C++ is used to copy a block of memory from one location to another. This function does not check for any buffer overflow condition, which can lead to a vulnerability if the size of the data being copied is greater than the size of the destination buffer. This can lead to overwriting of adjacent memory and can potentially lead to execution of arbitrary code, denial of service, or information disclosure.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, it is recommended to always ensure that the destination buffer is large enough to hold the data being copied. This can be done by checking the size of the data and the size of the buffer before calling `memcpy`. If the data is larger than the buffer, then the data should be truncated or the buffer should be resized appropriately.\n\n## Source Code Fix Recommendation\n\nHere is a recommended fix for the specific vulnerability sink:\n\n```cpp\nif (salen <= sizeof(addrs) - found) {\n    memcpy(addrs+found, interface->ifa_addr, salen);\n} else {\n    // Handle error condition, e.g., by truncating data or resizing buffer\n}\n```\n\n## Library Dependencies\n\nThe code example requires the following library dependencies:\n\n- `<string.h>` for `memcpy`\n- `<sys/types.h>` for `salen`\n- `<ifaddrs.h>` for `ifa_addr`\n\n## OWASP Resources\n\n- [OWASP C++ Secure Coding Practices](https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html)\n\n## Common Weakness Enumeration (CWE)\n\n- [CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')](https://cwe.mitre.org/data/definitions/120.html)"
+              },
+              "properties": {
+                "tags": [
+                  "DS121708"
+                ]
+              }
+            },
+            {
+              "id": "glog-5a24cb21-f14c-4129-9655-89586651586d",
+              "help": {
+                "text": "",
+                "markdown": "## Description\n\nThe `strncpy` function in C++ is a common source of vulnerabilities due to its potential to cause buffer overflow errors. This function copies a specified number of characters from one string to another. If the source string is longer than the specified number of characters, `strncpy` does not append a null character to the destination string. This can lead to buffer overflow if the destination string is used in a context that expects it to be null-terminated.\n\n## Mitigation Advice\n\nTo mitigate this vulnerability, consider using safer string handling functions that ensure null-termination, such as `strlcpy` or `snprintf`. Alternatively, you can manually add a null character at the end of the destination string after using `strncpy`.\n\n## Source Code Fix Recommendation\n\nHere is a recommended fix for the provided code:\n\n```cpp\n#include <string.h> // for strncpy and strlen\n#include <stdlib.h> // for malloc\n\nchar* if_name = (char*) malloc((i-j) * sizeof(char));\nstrncpy(if_name, ip_port_pair+j+1, i-j-1);\nif_name[i-j-1] = '\\0';\n```\n\nIn this fix, we allocate memory for `if_name` and then copy the string from `ip_port_pair+j+1` to `if_name`. We then manually add a null character at the end of `if_name`.\n\n## Library Dependencies\n\nThe code example requires the following library dependencies:\n\n- `<string.h>`: This library provides the `strncpy` function.\n- `<stdlib.h>`: This library provides the `malloc` function.\n\n## References\n\n- [OWASP C++ Secure Coding Practices](https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html)\n- [CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')](https://cwe.mitre.org/data/definitions/120.html)\n\nPlease note that the links provided are active and accessible to anonymous users at the time of writing this report."
+              },
+              "properties": {
+                "tags": [
+                  "DS111237"
+                ]
+              }
+            }
+          ],
+          "language": "en-US",
+          "contents": [
+            "localizedData",
+            "nonLocalizedData"
+          ],
+          "isComprehensive": false
+        }
+      },
+      "language": "en-US",
+      "results": [
+        {
+          "ruleId": "glog-a63ed140-1f2b-4e96-9d02-2b8712770b40",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (memcpy)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ucx_rma_plugin.c"
+                },
+                "region": {
+                  "startLine": 597,
+                  "startColumn": 2,
+                  "endLine": 597,
+                  "endColumn": 64,
+                  "charOffset": 18847,
+                  "charLength": 62,
+                  "snippet": {
+                    "text": "memcpy(mh->rkey_buf.buf, rkey_buf, mh->rkey_buf.rkey_buf_size)",
+                    "rendered": {
+                      "text": "memcpy(mh->rkey_buf.buf, rkey_buf, mh->rkey_buf.rkey_buf_size)",
+                      "markdown": "`memcpy(mh->rkey_buf.buf, rkey_buf, mh->rkey_buf.rkey_buf_size)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "There are a number of conditions in which memcpy can introduce a vulnerability (mismatched buffer sizes, null pointers, etc.). More secure alternitives perform additional validation of the source and destination buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/ucx_rma_plugin.c"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 18847,
+                        "charLength": 62
+                      },
+                      "insertedContent": {
+                        "text": "memcpy_s(mh->rkey_buf.buf, <size of mh->rkey_buf.buf>,  rkey_buf,  mh->rkey_buf.rkey_buf_size)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-0528a7b5-f9a9-4b00-a16a-9e557bce7ee5",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (strlen)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ucx_rma_plugin.c"
+                },
+                "region": {
+                  "startLine": 358,
+                  "startColumn": 6,
+                  "endLine": 358,
+                  "endColumn": 39,
+                  "charOffset": 10029,
+                  "charLength": 33,
+                  "snippet": {
+                    "text": "strlen(nccl_ucx_rma_zcopy_thresh)",
+                    "rendered": {
+                      "text": "strlen(nccl_ucx_rma_zcopy_thresh)",
+                      "markdown": "`strlen(nccl_ucx_rma_zcopy_thresh)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/ucx_rma_plugin.c"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 10029,
+                        "charLength": 33
+                      },
+                      "insertedContent": {
+                        "text": "strlen_s(nccl_ucx_rma_zcopy_thresh, <size of nccl_ucx_rma_zcopy_thresh>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/ucx_rma_plugin.c"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 10029,
+                        "charLength": 33
+                      },
+                      "insertedContent": {
+                        "text": "strnlen(nccl_ucx_rma_zcopy_thresh, <size of nccl_ucx_rma_zcopy_thresh>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-d7649a2c-54e2-42f4-8dea-732aa7270f85",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (malloc)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ucx_rma_plugin.c"
+                },
+                "region": {
+                  "startLine": 514,
+                  "startColumn": 13,
+                  "endLine": 514,
+                  "endColumn": 34,
+                  "charOffset": 15997,
+                  "charLength": 21,
+                  "snippet": {
+                    "text": "malloc(rkey_buf_size)",
+                    "rendered": {
+                      "text": "malloc(rkey_buf_size)",
+                      "markdown": "`malloc(rkey_buf_size)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "If the value provided to malloc is the result of unsafe integer math, it can result in an exploitable condition. "
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/ucx_rma_plugin.c"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 15997,
+                        "charLength": 21
+                      },
+                      "insertedContent": {
+                        "text": "calloc(<number of elements>, <size of each element>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-ad6602c7-8043-4759-b488-c45b29821a1e",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (malloc)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ucx_rma_plugin.c"
+                },
+                "region": {
+                  "startLine": 324,
+                  "startColumn": 48,
+                  "endLine": 324,
+                  "endColumn": 77,
+                  "charOffset": 9179,
+                  "charLength": 29,
+                  "snippet": {
+                    "text": "malloc(sizeof(struct ep_list)",
+                    "rendered": {
+                      "text": "malloc(sizeof(struct ep_list)",
+                      "markdown": "`malloc(sizeof(struct ep_list)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "If the value provided to malloc is the result of unsafe integer math, it can result in an exploitable condition. "
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/ucx_rma_plugin.c"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 9179,
+                        "charLength": 29
+                      },
+                      "insertedContent": {
+                        "text": "calloc(<number of elements>, <size of each element>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-13e0b2c8-38ff-4c87-9edc-ffc83febcc70",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (strlen)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ucx_rma_plugin.c"
+                },
+                "region": {
+                  "startLine": 348,
+                  "startColumn": 6,
+                  "endLine": 348,
+                  "endColumn": 30,
+                  "charOffset": 9714,
+                  "charLength": 24,
+                  "snippet": {
+                    "text": "strlen(nccl_ucx_rma_tls)",
+                    "rendered": {
+                      "text": "strlen(nccl_ucx_rma_tls)",
+                      "markdown": "`strlen(nccl_ucx_rma_tls)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/ucx_rma_plugin.c"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 9714,
+                        "charLength": 24
+                      },
+                      "insertedContent": {
+                        "text": "strlen_s(nccl_ucx_rma_tls, <size of nccl_ucx_rma_tls>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/ucx_rma_plugin.c"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 9714,
+                        "charLength": 24
+                      },
+                      "insertedContent": {
+                        "text": "strnlen(nccl_ucx_rma_tls, <size of nccl_ucx_rma_tls>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-57a8febd-b058-44fe-bf02-cc7f7201ca1c",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (memcpy)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ucx_rma_plugin.c"
+                },
+                "region": {
+                  "startLine": 184,
+                  "startColumn": 2,
+                  "endLine": 184,
+                  "endColumn": 47,
+                  "charOffset": 4924,
+                  "charLength": 45,
+                  "snippet": {
+                    "text": "memcpy(addr, &nccl_ucx_if_addr, sizeof(*addr)",
+                    "rendered": {
+                      "text": "memcpy(addr, &nccl_ucx_if_addr, sizeof(*addr)",
+                      "markdown": "`memcpy(addr, &nccl_ucx_if_addr, sizeof(*addr)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "There are a number of conditions in which memcpy can introduce a vulnerability (mismatched buffer sizes, null pointers, etc.). More secure alternitives perform additional validation of the source and destination buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/ucx_rma_plugin.c"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 4924,
+                        "charLength": 45
+                      },
+                      "insertedContent": {
+                        "text": "memcpy_s(addr, <size of addr>,  &nccl_ucx_if_addr,  sizeof(*addr)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-c6224833-fe87-471f-8c2a-2bb5924d6ed9",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (strlen)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 308,
+                  "startColumn": 20,
+                  "endLine": 308,
+                  "endColumn": 34,
+                  "charOffset": 12094,
+                  "charLength": 14,
+                  "snippet": {
+                    "text": "strlen(commId)",
+                    "rendered": {
+                      "text": "strlen(commId)",
+                      "markdown": "`strlen(commId)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 12094,
+                        "charLength": 14
+                      },
+                      "insertedContent": {
+                        "text": "strlen_s(commId, <size of commId>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 12094,
+                        "charLength": 14
+                      },
+                      "insertedContent": {
+                        "text": "strnlen(commId, <size of commId>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-95293873-7e2a-45da-bdd2-8be229fed7ea",
+          "kind": "fail",
+          "level": "error",
+          "message": {
+            "text": "Detected Use of Prohibited C Function (strncpy)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 275,
+                  "startColumn": 4,
+                  "endLine": 275,
+                  "endColumn": 48,
+                  "charOffset": 10462,
+                  "charLength": 44,
+                  "snippet": {
+                    "text": "strncpy(port_str, ip_port_pair+i+2, len-i-1)",
+                    "rendered": {
+                      "text": "strncpy(port_str, ip_port_pair+i+2, len-i-1)",
+                      "markdown": "`strncpy(port_str, ip_port_pair+i+2, len-i-1)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "strncpy is dangerous, as if the source contains 'n' or more characters, it will not null terminate the destination."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 10462,
+                        "charLength": 44
+                      },
+                      "insertedContent": {
+                        "text": "strcpy_s(port_str,  len-i-1,  ip_port_pair+i+2)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "strncpy is dangerous, as if the source contains 'n' or more characters, it will not null terminate the destination."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 10462,
+                        "charLength": 44
+                      },
+                      "insertedContent": {
+                        "text": "strlcpy(port_str,  ip_port_pair+i+2,  len-i-1)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "Important",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.BannedFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-0d7cfefa-edfd-4a6b-9237-0be74fde2e17",
+          "kind": "fail",
+          "level": "error",
+          "message": {
+            "text": "Detected Use of Prohibited C Function (strncpy)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 274,
+                  "startColumn": 4,
+                  "endLine": 274,
+                  "endColumn": 61,
+                  "charOffset": 10399,
+                  "charLength": 57,
+                  "snippet": {
+                    "text": "strncpy(ip_str, ip_port_pair+1, global_scope ? i-1 : j-1)",
+                    "rendered": {
+                      "text": "strncpy(ip_str, ip_port_pair+1, global_scope ? i-1 : j-1)",
+                      "markdown": "`strncpy(ip_str, ip_port_pair+1, global_scope ? i-1 : j-1)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "strncpy is dangerous, as if the source contains 'n' or more characters, it will not null terminate the destination."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 10399,
+                        "charLength": 57
+                      },
+                      "insertedContent": {
+                        "text": "strcpy_s(ip_str,  global_scope ? i-1 : j-1,  ip_port_pair+1)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "strncpy is dangerous, as if the source contains 'n' or more characters, it will not null terminate the destination."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 10399,
+                        "charLength": 57
+                      },
+                      "insertedContent": {
+                        "text": "strlcpy(ip_str,  ip_port_pair+1,  global_scope ? i-1 : j-1)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "Important",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.BannedFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-58f30bd6-2192-486f-9dbb-0f70fd291b70",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (strlen)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 259,
+                  "startColumn": 25,
+                  "endLine": 259,
+                  "endColumn": 45,
+                  "charOffset": 9829,
+                  "charLength": 20,
+                  "snippet": {
+                    "text": "strlen(ip_port_pair)",
+                    "rendered": {
+                      "text": "strlen(ip_port_pair)",
+                      "markdown": "`strlen(ip_port_pair)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 9829,
+                        "charLength": 20
+                      },
+                      "insertedContent": {
+                        "text": "strlen_s(ip_port_pair, <size of ip_port_pair>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 9829,
+                        "charLength": 20
+                      },
+                      "insertedContent": {
+                        "text": "strnlen(ip_port_pair, <size of ip_port_pair>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-19d9ee50-8686-43a0-bf2e-dbaeb9a7e179",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "\"Detected Issue with C Function (strlen)\""
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 296,
+                  "startColumn": 13,
+                  "endLine": 296,
+                  "endColumn": 24,
+                  "charOffset": 11471,
+                  "charLength": 11,
+                  "snippet": {
+                    "text": "strlen(env)",
+                    "rendered": {
+                      "text": "strlen(env)",
+                      "markdown": "`strlen(env)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 11471,
+                        "charLength": 11
+                      },
+                      "insertedContent": {
+                        "text": "strlen_s(env, <size of env>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 11471,
+                        "charLength": 11
+                      },
+                      "insertedContent": {
+                        "text": "strnlen(env, <size of env>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-4c85e6a3-2ea5-43ce-bcca-f7be3d39c491",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (strlen)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 211,
+                  "startColumn": 24,
+                  "endLine": 211,
+                  "endColumn": 44,
+                  "charOffset": 8033,
+                  "charLength": 20,
+                  "snippet": {
+                    "text": "strlen(ip_port_pair)",
+                    "rendered": {
+                      "text": "strlen(ip_port_pair)",
+                      "markdown": "`strlen(ip_port_pair)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 8033,
+                        "charLength": 20
+                      },
+                      "insertedContent": {
+                        "text": "strlen_s(ip_port_pair, <size of ip_port_pair>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "If a string is missing a null terminator, strlen will read past the end of the buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 8033,
+                        "charLength": 20
+                      },
+                      "insertedContent": {
+                        "text": "strnlen(ip_port_pair, <size of ip_port_pair>)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-ab574062-5b1f-40c1-be5d-c49f988854a9",
+          "kind": "fail",
+          "level": "error",
+          "message": {
+            "text": "\"Prohibited strncpy C Function Identified\""
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 196,
+                  "startColumn": 4,
+                  "endLine": 196,
+                  "endColumn": 76,
+                  "charOffset": 7384,
+                  "charLength": 72,
+                  "snippet": {
+                    "text": "strncpy(ifNames+found*ifNameMaxSize, interface->ifa_name, ifNameMaxSize)",
+                    "rendered": {
+                      "text": "strncpy(ifNames+found*ifNameMaxSize, interface->ifa_name, ifNameMaxSize)",
+                      "markdown": "`strncpy(ifNames+found*ifNameMaxSize, interface->ifa_name, ifNameMaxSize)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "strncpy is dangerous, as if the source contains 'n' or more characters, it will not null terminate the destination."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 7384,
+                        "charLength": 72
+                      },
+                      "insertedContent": {
+                        "text": "strcpy_s(ifNames+found*ifNameMaxSize,  ifNameMaxSize,  interface->ifa_name)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "strncpy is dangerous, as if the source contains 'n' or more characters, it will not null terminate the destination."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 7384,
+                        "charLength": 72
+                      },
+                      "insertedContent": {
+                        "text": "strlcpy(ifNames+found*ifNameMaxSize,  interface->ifa_name,  ifNameMaxSize)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "Important",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.BannedFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-9e065107-fe28-4173-8c81-65540fb23868",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (memcpy)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 193,
+                  "startColumn": 4,
+                  "endLine": 193,
+                  "endColumn": 56,
+                  "charOffset": 7293,
+                  "charLength": 52,
+                  "snippet": {
+                    "text": "memcpy(localAddrs+found, interface->ifa_addr, salen)",
+                    "rendered": {
+                      "text": "memcpy(localAddrs+found, interface->ifa_addr, salen)",
+                      "markdown": "`memcpy(localAddrs+found, interface->ifa_addr, salen)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "There are a number of conditions in which memcpy can introduce a vulnerability (mismatched buffer sizes, null pointers, etc.). More secure alternitives perform additional validation of the source and destination buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 7293,
+                        "charLength": 52
+                      },
+                      "insertedContent": {
+                        "text": "memcpy_s(localAddrs+found, <size of localAddrs+found>,  interface->ifa_addr,  salen)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-7af09692-3aff-489c-bb42-72ef8cfbd165",
+          "kind": "fail",
+          "level": "note",
+          "message": {
+            "text": "Detected Vulnerability in C Function (memcpy)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 118,
+                  "startColumn": 6,
+                  "endLine": 118,
+                  "endColumn": 53,
+                  "charOffset": 4410,
+                  "charLength": 47,
+                  "snippet": {
+                    "text": "memcpy(addrs+found, interface->ifa_addr, salen)",
+                    "rendered": {
+                      "text": "memcpy(addrs+found, interface->ifa_addr, salen)",
+                      "markdown": "`memcpy(addrs+found, interface->ifa_addr, salen)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "There are a number of conditions in which memcpy can introduce a vulnerability (mismatched buffer sizes, null pointers, etc.). More secure alternitives perform additional validation of the source and destination buffer"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 4410,
+                        "charLength": 47
+                      },
+                      "insertedContent": {
+                        "text": "memcpy_s(addrs+found, <size of addrs+found>,  interface->ifa_addr,  salen)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "BestPractice",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.ProblematicFunction"
+            ]
+          }
+        },
+        {
+          "ruleId": "glog-5a24cb21-f14c-4129-9655-89586651586d",
+          "kind": "fail",
+          "level": "error",
+          "message": {
+            "text": "\"Detected Use of Prohibited C Function (strncpy)\""
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "include/socket.h"
+                },
+                "region": {
+                  "startLine": 277,
+                  "startColumn": 23,
+                  "endLine": 277,
+                  "endColumn": 64,
+                  "charOffset": 10562,
+                  "charLength": 41,
+                  "snippet": {
+                    "text": "strncpy(if_name, ip_port_pair+j+1, i-j-1)",
+                    "rendered": {
+                      "text": "strncpy(if_name, ip_port_pair+j+1, i-j-1)",
+                      "markdown": "`strncpy(if_name, ip_port_pair+j+1, i-j-1)`"
+                    }
+                  },
+                  "sourceLanguage": "c"
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "strncpy is dangerous, as if the source contains 'n' or more characters, it will not null terminate the destination."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 10562,
+                        "charLength": 41
+                      },
+                      "insertedContent": {
+                        "text": "strcpy_s(if_name,  i-j-1,  ip_port_pair+j+1)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "description": {
+                "text": "strncpy is dangerous, as if the source contains 'n' or more characters, it will not null terminate the destination."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "include/socket.h"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "charOffset": 10562,
+                        "charLength": 41
+                      },
+                      "insertedContent": {
+                        "text": "strlcpy(if_name,  ip_port_pair+j+1,  i-j-1)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "DevSkimSeverity": "Important",
+            "DevSkimConfidence": "High",
+            "tags": [
+              "API.DangerousAPI.BannedFunction"
+            ]
+          }
+        }
+      ],
+      "newlineSequences": [
+        "\r\n",
+        "\n"
+      ]
+    }
+  ]
+}
